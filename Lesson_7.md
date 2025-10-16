@@ -135,7 +135,44 @@ ORDER BY product_id</pre>
           times_purchased DESC
         LIMIT 10
     )
+  </pre>
+
+## Задача 23.
+  Из таблицы orders выведите id и содержимое заказов, которые включают хотя бы один из пяти самых дорогих товаров, доступных в нашем сервисе.
+
+Результат отсортируйте по возрастанию id заказа.
+
+Поля в результирующей таблице: order_id, product_ids
 
 SELECT product_id, times_purchased
 FROM unnest_t
-ORDER BY product_id</pre>
+ORDER BY product_id
+
+### Solution
+<pre>WITH
+    five_expensive_products_t AS (
+        SELECT
+          product_id
+        FROM products
+        ORDER BY
+          price DESC
+        LIMIT 5
+    ) 
+
+SELECT order_id, product_ids
+FROM orders
+WHERE product_ids && ARRAY(SELECT product_id FROM five_expensive_products_t) 
+ORDER BY order_id</pre>
+
+<pre>with top_products as (SELECT product_id
+                      FROM   products
+                      ORDER BY price desc limit 5), unnest as (SELECT order_id,
+                                                product_ids,
+                                                unnest(product_ids) as product_id
+                                         FROM   orders)
+SELECT DISTINCT order_id,
+                product_ids
+FROM   unnest
+WHERE  product_id in (SELECT product_id
+                      FROM   top_products)
+ORDER BY order_id</pre>
