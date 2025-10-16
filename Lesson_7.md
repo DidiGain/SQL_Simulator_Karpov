@@ -78,3 +78,64 @@ FROM first_orders_t
 GROUP BY
     date
 ORDER BY date</pre>
+
+## Задача 22.
+Используя функцию unnest, определите 10 самых популярных товаров в таблице orders.
+
+Самыми популярными товарами будем считать те, которые встречались в заказах чаще всего. Если товар встречается в одном заказе несколько раз (когда было куплено несколько единиц товара), это тоже учитывается при подсчёте. Учитывайте только неотменённые заказы.
+
+Выведите id товаров и то, сколько раз они встречались в заказах (то есть сколько раз были куплены). Новую колонку с количеством покупок товаров назовите times_purchased.
+
+Результат отсортируйте по возрастанию id товара.
+
+Поля в результирующей таблице: product_id, times_purchased
+
+### Solution
+<pre>WITH
+    cancelled_orders_t AS (
+        SELECT order_id
+        FROM user_actions
+        WHERE action = 'cancel_order'
+    ),
+    unnest_t AS (
+        SELECT
+          unnest(product_ids) as product_id
+        FROM orders
+        WHERE order_id NOT IN (SELECT order_id FROM cancelled_orders_t)
+    ),
+    count_t AS (
+        SELECT 
+          product_id,
+          COUNT(product_id) as times_purchased
+        FROM unnest_t
+        GROUP BY product_id
+        ORDER BY
+          times_purchased DESC
+        LIMIT 10
+    )
+
+SELECT product_id, times_purchased
+FROM count_t
+ORDER BY product_id</pre>
+
+<pre>WITH
+    cancelled_orders_t AS (
+        SELECT order_id
+        FROM user_actions
+        WHERE action = 'cancel_order'
+    ),
+    unnest_t AS (
+        SELECT
+          unnest(product_ids) as product_id,
+          count(*) as times_purchased
+        FROM orders
+        WHERE order_id NOT IN (SELECT order_id FROM cancelled_orders_t)
+        GROUP BY product_id
+        ORDER BY
+          times_purchased DESC
+        LIMIT 10
+    )
+
+SELECT product_id, times_purchased
+FROM unnest_t
+ORDER BY product_id</pre>
